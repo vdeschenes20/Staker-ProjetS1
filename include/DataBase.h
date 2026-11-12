@@ -18,9 +18,8 @@
 #define TRAITER  2
 #define STOCKER  3
 
-#define EN_ATTENTE    0 
-#define PLACE         1
-#define EN_TRAITEMENT 2
+#define PLACE         0
+#define EN_TRAITEMENT 1
 
 #define NUMERO   0 
 #define POSITION 1
@@ -51,11 +50,9 @@ void gestionDonnees(Commande c);
 void recherche(int parametre, int info, int *position);
 void stockage(int parametre, int info, int *position);
 bool scanPiece(int parametre, Piece *p1);
-void scanAttente(Piece *p1, Commande *c);
 int scanStockage(Piece *p1);
 void afficheInfos(Piece p);
 void dataBaseUpdate(int type, Piece p);
-void creationDemande(Piece p);
 void creationPiece(Piece p);
 void parsePieceDetail(String PieceDetail, Piece *p1);
 bool verificationNumeroDisponible(int numero);

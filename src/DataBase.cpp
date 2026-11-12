@@ -29,18 +29,6 @@ void gestionDonnees(Commande c)
 {
     switch (c.type)
     {
-        case ATTENTE:
-        scanAttente(&pieceExistante, &c);
-            if(c.parametre1 != ATTENTE)
-            {
-                c.type = STOCKER;
-                c.parametre2 = pieceExistante.type;
-                for (int i = 0; i < POS_SIZE; i++) {
-                    c.position[i] = pieceExistante.position[i];
-                }
-            }
-            return;
-            break;
         case CHERCHER:
             recherche(c.parametre1, c.parametre2, c.position);
             break;
@@ -100,8 +88,7 @@ void stockage(int numero, int type, int *position)
     switch (etat)
     {
         case PIECE_EN_ATTENTE:
-            Serial.println("Piece en attente");
-            creationDemande(nouvellePiece);
+            Serial.println("Piece en traitement");
             break;
         case PIECE_EXISTANTE:
             Serial.println("Piece deja existante");
@@ -237,7 +224,7 @@ void dataBaseUpdate(int type, Piece p)
 }
 int scanStockage(Piece *p1)
 {
-    String spaceDetail = trouverLigne(3, "0"); //trouve un etat d'attente
+    String spaceDetail = trouverLigne(3, "1"); //trouve un etat d'attente
     if(spaceDetail != "")
     {
         Serial.println("Piece en attente");
@@ -315,10 +302,6 @@ void creationPiece(Piece p)
     p.etat = TRAITER;
 
     dataBaseUpdate(STOCKER, p);
-}
-void creationDemande(Piece p)
-{
-    return;
 }
 bool verificationNumeroDisponible(int numero)
 {
