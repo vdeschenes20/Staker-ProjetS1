@@ -2,6 +2,7 @@
 #include "DataBase.h"
 #include "Commande.h"
 #include "SDdriver.h"
+#include "capteurCouleur.h"
 
 // put function declarations here:
 Commande commande;
@@ -12,6 +13,11 @@ void setup() {
   initialsationDonnees();
   pinMode(2, INPUT);
   pinMode(3, INPUT);
+
+  initialiserCapteurCouleur();
+  //modeCalibration();   // à appeler dans setup() pour calibrer 
+                     // (mettre en commentaire après calibration)
+  Serial.begin(9600);
 }
 
 void loop() {
@@ -51,5 +57,5 @@ void loop() {
     gestionDonnees(commande);
   }
   lastButton1State = digitalRead(2);
-  lastButton2State = digitalRead(3);
+  lastButton2State = digitalRead(3); 
 }

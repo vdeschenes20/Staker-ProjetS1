@@ -1,0 +1,42 @@
+===============================================================
+GUIDE DE CALIBRATION (version Nano, avec le moniteur serie)
+===============================================================
+
+BUT
+Trouver les plages R, G, B de chaque couleur et les mettre dans
+le tableau seuils[] (fichier traitement_couleur.cpp).
+
+ETAPES
+
+1. Dans main.cpp, mets modeCalibration() dans setup() et televerse le code.
+
+2. Ouvre le moniteur serie a 9600 bauds.
+
+3. Le programme affiche "Place le capteur sur : Rose".
+   Place le capteur sur la couleur, a la MEME hauteur et avec le
+   MEME eclairage que pendant l'utilisation reelle.
+
+4. Envoie une lettre (ex: a) puis Entree.
+   Garde le capteur immobile pendant les 3 secondes de lecture.
+
+5. Repete pour chaque couleur, dans cet ordre :
+   Rose, Jaune, Orange, Bleu, Vert.
+
+6. A la fin, le tableau complet s'affiche. Exemple :
+      {Rose, 280.8, 450.1, 259.2, 422.4, 163.0, 256.3},
+   Les valeurs sont dans l'ordre : minR, maxR, minG, maxG, minB, maxB.
+
+7. Les valeurs sont deja utilisees automatiquement tant que le
+   programme tourne. Pour les GARDER apres un redemarrage, copie
+   les lignes affichees dans le tableau seuils[] et remplace le
+   nom par l'identifiant en MAJUSCULES :
+      {ROSE, 280.8, 450.1, 259.2, 422.4, 163.0, 256.3},
+   (sinon elles sont perdues quand le Nano est eteint).
+
+8. Retire modeCalibration() du setup() avant le programme final.
+
+CONSEILS
+
+- MARGE (en haut du tableau) elargit les plages : augmente-la si
+  une couleur est parfois ratee, diminue-la si deux couleurs se
+  confondent.

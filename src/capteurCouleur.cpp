@@ -2,7 +2,6 @@
 #include <Wire.h>
 #include <Adafruit_TCS34725.h>
 #include "capteurCouleur.h"
-#include <LibRobus.h>
 
 // ---------------------------------------------------------------
 // CAPTEUR
@@ -177,12 +176,23 @@ void modeCalibration() {
 
     for (int i = 0; i < NB_COULEURS; i++) {
         Serial.print("Place le capteur sur : ");
-        Serial.println(noms[i]);          // affiche le nom de la couleur à calibrer
-        while (!ROBUS_IsBumper(2)) {}     // attend l'appui sur le bumper avant
-        delay(500);
-        calibrerCouleur(noms[i], i, 3000); // lit pendant 3 secondes et remplit seuils de la couleur
-    }
+        Serial.print(noms[i]);
+        Serial.println(" puis envoie une lettre");
 
+        while (!Serial.available()) {}              // attend que tu envoies un caractère
+        while (Serial.available()) Serial.read();   // vide ce que tu as envoyé
+
+        calibrerCouleur(noms[i], i, 3000);          // lit pendant 3 secondes et remplit seuils[i]
+    }
+      // Affiche le tableau final (utile pour copier-coller dans le code)
+    Serial.println("--- Tableau de seuils ---");
+    for (int i = 0; i < NB_COULEURS; i++) {
+        Serial.print("{"); Serial.print(noms[i]); Serial.print(", ");
+        Serial.print(seuils[i].minR); Serial.print(", "); Serial.print(seuils[i].maxR); Serial.print(", ");
+        Serial.print(seuils[i].minG); Serial.print(", "); Serial.print(seuils[i].maxG); Serial.print(", ");
+        Serial.print(seuils[i].minB); Serial.print(", "); Serial.print(seuils[i].maxB);
+        Serial.println("},");
+    }
     Serial.println("Calibration terminee.");
 }
 
