@@ -6,14 +6,15 @@
 // ---------------------------------------------------------------
 // CONSTANTES
 // ---------------------------------------------------------------
-#define NB_ECHANTILLONS 10   // nombre de lectures gardées pour la moyenne
 #define NB_COULEURS     5    // nombre de couleurs à reconnaître
+#define MARGE          0.10f // marge de sécurité autour des min/max mesurés
+#define NB_LECTURES     10   // nombre de lectures pour la décision finale
+#define SEUIL_VOTES     8    // nombre de lectures identiques requis pour prendre une décision
 
 // ---------------------------------------------------------------
 // TYPES
 // ---------------------------------------------------------------
 
-// Une lecture du capteur (valeurs brutes rouge, vert, bleu)
 struct Couleur {
     float R;
     float G;
@@ -38,14 +39,11 @@ enum CouleurId {
 bool initialiserCapteurCouleur();   // à appeler dans setup(), retourne false si capteur introuvable
 Couleur lireCapteur();              // une lecture brute RGB
 
-// Mémoire des échantillons
-void ajouterEchantillon(Couleur c);
-void viderEchantillons();
-Couleur moyenneCouleur();
 
 // Identification
 CouleurId identifierCouleur(Couleur m);
 String nomCouleur(CouleurId id);
+CouleurId decisionCouleur();
 
 // Calibration (remplit automatiquement le tableau de seuils)
 void calibrerCouleur(const char* nom, int index, int duree_ms);

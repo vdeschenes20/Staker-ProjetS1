@@ -17,9 +17,9 @@ const int SEUIL_DROITE = 77;
 const float VITESSE_AVANCE = 0.23f;
 const float VITESSE_INTERIEURE = 0.12f;
 const float VITESSE_EXTERIEURE = 0.27f;
+
 enum Direction { TOUT_DROIT, GAUCHE, DROITE };
 Direction dernierVirage = TOUT_DROIT;
-bool bandeEpaisseTraitee = false;
 
 void rouler(float vitesseGauche, float vitesseDroite) {
   MOTOR_SetSpeed(LEFT, vitesseGauche);
@@ -30,7 +30,6 @@ void rouler(float vitesseGauche, float vitesseDroite) {
 
 void reinitialiserSuiveurLigne() {
   dernierVirage = TOUT_DROIT;
-  bandeEpaisseTraitee = false;
 }
 
 void initialiserSuiveurLigne() {
@@ -52,9 +51,7 @@ bool ligneCentree() {
 
 void suivreLigne() {
   const int position = detecterPositionRobot();
-  if (position != 7) {
-    bandeEpaisseTraitee = false;
-  }
+
 
   switch (position) {
     case 0: {
@@ -69,36 +66,36 @@ void suivreLigne() {
       }
       break;
     }
-    case 1:
+    case 1:     //virage à droite fort (capteur droit seul)
       dernierVirage = DROITE;
       rouler(VITESSE_EXTERIEURE, VITESSE_INTERIEURE);
       break;
-    case 2:
+      
+    case 2:   // ligne centrée (capteur centre seul)
       rouler(VITESSE_AVANCE, VITESSE_AVANCE);
       break;
-    case 3:
+
+    case 3:  // virage à droite léger (capteur centre et droit)
       dernierVirage = DROITE;
       rouler(0.24f, 0.17f);
-      break;
-    case 4:
+      break
+      ;
+    case 4:   // virage à gauche fort (capteur gauche seul)
       dernierVirage = GAUCHE;
       rouler(VITESSE_INTERIEURE, VITESSE_EXTERIEURE);
       break;
-    case 5:
-      // Deux capteurs voient la ligne : traverser droit.
+
+    case 5:     // traverser droit. (capteur gauche et droit)
       rouler(VITESSE_AVANCE, VITESSE_AVANCE);
       break;
-    case 6:
+
+    case 6:  // virage à gauche léger (capteur gauche et centre)
       dernierVirage = GAUCHE;
       rouler(0.17f, 0.24f);
       break;
-    case 7:
-      if (!bandeEpaisseTraitee) {
-        bandeEpaisseTraitee = true;
-        mouvementAvant(85.0f);
-      } else {
+
+    case 7:  // avance (tous les capteurs actifs)
         rouler(VITESSE_AVANCE, VITESSE_AVANCE);
-      }
       break;
   }
 }

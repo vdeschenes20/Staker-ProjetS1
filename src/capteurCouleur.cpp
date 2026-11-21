@@ -33,50 +33,10 @@ Couleur lireCapteur() {
     return c;
 }
 
-// ---------------------------------------------------------------
-// MÉMOIRE DES ÉCHANTILLONS
-//crée un tableau pour stocker les dernières lectures brutes RGB du capteur
-// ---------------------------------------------------------------
-static Couleur echantillons[NB_ECHANTILLONS];
-static int indexEchantillon = 0;
-static int nbRecues = 0;
 
-// Ajoute une lecture à la mémoire (écrase la plus ancienne quand c'est plein)
-void ajouterEchantillon(Couleur c) {
-    echantillons[indexEchantillon] = c;
-    indexEchantillon = (indexEchantillon + 1) % NB_ECHANTILLONS;
-    if (nbRecues < NB_ECHANTILLONS) {
-        nbRecues++;
-    }
-}
-
-// Remet la mémoire à zéro (à appeler avant une nouvelle série de mesures)
-void viderEchantillons() {
-    indexEchantillon = 0;
-    nbRecues = 0;
-}
 
 // ---------------------------------------------------------------
-// CALCUL DE LA COULEUR MOYENNE
-//fait la moyenne des lectures stockées dans le tableau echantillons[]
-// ---------------------------------------------------------------
-Couleur moyenneCouleur() {
-    Couleur somme = {0, 0, 0};
-    for (int i = 0; i < nbRecues; i++) {
-        somme.R += echantillons[i].R;
-        somme.G += echantillons[i].G;
-        somme.B += echantillons[i].B;
-    }
-    if (nbRecues > 0) {
-        somme.R /= nbRecues;
-        somme.G /= nbRecues;
-        somme.B /= nbRecues;
-    }
-    return somme;
-}
-
-// ---------------------------------------------------------------
-// TABLEAU DES SEUILS (rempli automatiquement par la calibration)
+// TABLEAU DES SEUILS 
 // ---------------------------------------------------------------
 struct Seuil {
     CouleurId id;
@@ -85,19 +45,19 @@ struct Seuil {
     float minB, maxB;
 };
 
-#define MARGE 0.10f   // marge de 10 % autour des min/max mesurés
 
-// Valeurs par défaut (anciennes mesures), écrasées quand on calibre.
-// L'ordre est le même que dans modeCalibration() : ROSE, JAUNE, ORANGE, BLEU, VERT
 
-static Seuil seuils[NB_COULEURS] = {      //NB_couleur est le nombre de couleurs à 
-                                         //reconnaître
+static Seuil seuils[NB_COULEURS] = {      //NB_couleur est le nombre de couleurs à reconnaître
     {ROSE,   312, 409, 288, 384, 181, 233},
     {JAUNE,  340, 413, 422, 517, 228, 279},
     {ORANGE, 369, 469,  29, 378, 265, 332},
     {BLEU,   309, 364, 313, 369, 156, 184},
     {VERT,   405, 481, 257, 298, 334, 391}
 };
+
+
+
+
 
 // ---------------------------------------------------------------
 // IDENTIFICATION DE LA COULEUR
@@ -116,9 +76,41 @@ CouleurId identifierCouleur(Couleur m) {
 }
 
 // ---------------------------------------------------------------
+// Mode de décision 
+// Lit le capteur plusieurs fois et prend la décision par vote
+//***fonction à appeler pour avoir la couleur identifiée par le capteur***
+// ---------------------------------------------------------------
+
+CouleurId decisionCouleur() {
+    CouleurId lectures[NB_LECTURES];
+
+    // identification de la couleur
+    for (int i = 0; i < NB_LECTURES; i++) {
+        lectures[i] = identifierCouleur(lireCapteur());
+        delay(50);
+    }
+
+    // regarde combien de lectures sont de la même couleur et prend la décision
+    for (int i = 0; i < NB_LECTURES; i++) {
+        int votes = 0;
+        for (int j = 0; j < NB_LECTURES; j++) {
+            if (lectures[j] == lectures[i]) votes++;
+        }
+        if (votes >= SEUIL_VOTES && lectures[i] != AUCUN) {
+            return lectures[i];  
+        }
+    }
+
+    return AUCUN;  
+}
+
+
+
+
+
+
+// ---------------------------------------------------------------
 // CALIBRATION DE LA COULEUR
-// Lit le capteur pendant duree_ms, puis écrit les min/max (avec marge)
-// directement dans seuils[index].
 // À utiliser pour calibrer seulement, pas dans le programme final.
 // ---------------------------------------------------------------
 void calibrerCouleur(const char* nom, int index, int duree_ms) {
@@ -126,7 +118,7 @@ void calibrerCouleur(const char* nom, int index, int duree_ms) {
     float maxR = 0,   maxG = 0,   maxB = 0;
     float sommeR = 0, sommeG = 0, sommeB = 0;
 
-    int n = duree_ms / 50;            // nombre de lectures (50 ms entre chaque)
+    int n = duree_ms / 50;           
 
     for (int i = 0; i < n; i++) {
         Couleur c = lireCapteur();
@@ -154,7 +146,7 @@ void calibrerCouleur(const char* nom, int index, int duree_ms) {
     seuils[index].minB = minB * (1.0f - MARGE);
     seuils[index].maxB = maxB * (1.0f + MARGE);
 
-    // Affichage dans le moniteur série pour vérification
+    // Affichage dans le moniteur série pour vérif
     Serial.print(nom);
     Serial.print(" | R: "); Serial.print(minR); Serial.print(" a "); Serial.print(maxR);
     Serial.print(" (moy "); Serial.print(sommeR / n); Serial.print(")");
@@ -171,7 +163,7 @@ void calibrerCouleur(const char* nom, int index, int duree_ms) {
 //fonction a appeler dans setup() pour calibrer toutes les couleurs
 // ---------------------------------------------------------------
 void modeCalibration() {
-    // Même ordre que le tableau seuils[]
+ 
     const char* noms[NB_COULEURS] = {"Rose", "Jaune", "Orange", "Bleu", "Vert"};
 
     for (int i = 0; i < NB_COULEURS; i++) {
@@ -182,7 +174,7 @@ void modeCalibration() {
         while (!Serial.available()) {}              // attend que tu envoies un caractère
         while (Serial.available()) Serial.read();   // vide ce que tu as envoyé
 
-        calibrerCouleur(noms[i], i, 3000);          // lit pendant 3 secondes et remplit seuils[i]
+        calibrerCouleur(noms[i], i, 3000);          // lit pendant 3 secondes (peux changer la durée si besoin)
     }
       // Affiche le tableau final (utile pour copier-coller dans le code)
     Serial.println("--- Tableau de seuils ---");
