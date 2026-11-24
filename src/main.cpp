@@ -1,55 +1,54 @@
 #include <Arduino.h>
-#include "DataBase.h"
-#include "Commande.h"
-#include "SDdriver.h"
+#include "SRF04Sonar/SRF04Sonar.cpp"
 
 // put function declarations here:
-Commande commande;
-int nb = 0;
-int nb2 = 25;
+const uint8_t ECHO_PIN = 7;
+const uint8_t TRIG_PIN = 8;
+
+const uint8_t RED_PIN = 9;
+const uint8_t GREEN_PIN = 11;
+const uint8_t BLUE_PIN = 10;
+
+const float DIST_TRESHOLD = 15; // Valeur du treshold de proximité en cm.
+
+SRF04Sonar sonar;
+bool clear = true;
+
+void set_color(uint8_t r, uint8_t g, uint8_t b) {
+  r = 255 - r;
+  g = 255 - g;
+  b = 255 - b;
+  analogWrite(RED_PIN, r);
+  analogWrite(GREEN_PIN, g);
+  analogWrite(BLUE_PIN, b);
+}
+
 void setup() {
-  initialisationCommande();
-  initialsationDonnees();
-  pinMode(2, INPUT);
-  pinMode(3, INPUT);
+  // put your setup code here, to run once:
+  Serial.begin(9600);
+  sonar.init(ECHO_PIN, TRIG_PIN);
+
+  pinMode(RED_PIN, OUTPUT);
+  pinMode(GREEN_PIN, OUTPUT);
+  pinMode(BLUE_PIN, OUTPUT);
+
+  set_color(0, 0, 255); // Bleu au départ
 }
 
 void loop() {
-  static int lastButton1State = HIGH;
-  static int lastButton2State = HIGH;
-  int buttonState = digitalRead(2);
-  int buttonState2 = digitalRead(3);
-  if (buttonState == LOW && lastButton1State == HIGH) {
-    delay(150);
-    if (digitalRead(2) != LOW) {
-      lastButton1State = digitalRead(2);
-      return;
-    }
+  // put your main code here, to run repeatedly:
+  float distance = sonar.getRange();
 
-    nb++;
-    commande.type = CHERCHER;
-    commande.parametre1 = TYPE;
-    commande.parametre2 = 1;
-    commande.position[0] = 0;
-    commande.position[1] = 0;
-    commande.position[2] = 0;
-    gestionDonnees(commande);
+  if (clear && distance > 0 && distance <= DIST_TRESHOLD) {
+    clear = false;
+    Serial.println("Objet trop proche!");
+    set_color(255, 255, 0);
   }
-  if(buttonState2 == LOW && lastButton2State == HIGH) {
-    delay(150);
-    if (digitalRead(3) != LOW) {
-      lastButton2State = digitalRead(3);
-      return;
-    }
-    nb2++;
-    commande.type = STOCKER;
-    commande.parametre1 = 0;
-    commande.parametre2 = 1;
-    commande.position[0] = 4;
-    commande.position[1] = 1;
-    commande.position[2] = 1;
-    gestionDonnees(commande);
+  else if (!clear && (distance == 0 || distance > DIST_TRESHOLD)) {
+    clear = true;
+    Serial.println("Clear!");
+    set_color(0, 0, 255);
   }
-  lastButton1State = digitalRead(2);
-  lastButton2State = digitalRead(3);
+
+  delay(100);
 }
