@@ -7,28 +7,32 @@
 
 
 // put function declarations here:
-Commande commande;
-int nb = 0;
-int nb2 = 25;
+// Commande commande;
+// int nb = 0;
+// int nb2 = 25;
 void setup() {
-  initialisationCommande();
-  initialsationDonnees();
-  pinMode(2, INPUT);
-  pinMode(3, INPUT);
-
-  initialiserCapteurCouleur();
-  //modeCalibration();   // à appeler dans setup() pour calibrer 
-                     // (mettre en commentaire après calibration)
+  BoardInit();
   Serial.begin(9600);
 
-  BoardInit();
+
+  // initialisationCommande();
+  // initialsationDonnees();
+  // pinMode(2, INPUT);
+  // pinMode(3, INPUT);
+
+  initialiserCapteurCouleur();
+  modeCalibration();   // à appeler dans setup() pour calibrer 
+                     // (mettre en commentaire après calibration)
+ 
+
+
   initialiserSuiveurLigne();
   reinitialiserSuiveurLigne();
 }
 
 void loop() {
 
-  suivreLigne();
+ //suivreLigne();
 
   CouleurId couleur = decisionCouleur();
   Serial.println(nomCouleur(couleur));

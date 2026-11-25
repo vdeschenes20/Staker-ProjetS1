@@ -16,7 +16,7 @@ const int SEUIL_DROITE = 77;
 
 const float VITESSE_AVANCE = 0.23f;
 const float VITESSE_INTERIEURE = 0.12f;
-const float VITESSE_EXTERIEURE = 0.27f;
+const float VITESSE_EXTERIEURE = 0.33f;
 
 enum Direction { TOUT_DROIT, GAUCHE, DROITE };
 Direction dernierVirage = TOUT_DROIT;
@@ -58,44 +58,53 @@ void suivreLigne() {
       // Seul le motif sans capteur actif signifie que la ligne est perdue.
       Direction recherche = dernierVirage;
       if (recherche == TOUT_DROIT) recherche = GAUCHE;
+      
 
       if (recherche == GAUCHE) {
         rouler(0.08f, 0.19f);
       } else {
         rouler(0.19f, 0.08f);
       }
+      Serial.print("Ligne perdue, recherche ");
       break;
     }
     case 1:     //virage à droite fort (capteur droit seul)
       dernierVirage = DROITE;
       rouler(VITESSE_EXTERIEURE, VITESSE_INTERIEURE);
+      Serial.print("Virage à droite fort");
       break;
       
     case 2:   // ligne centrée (capteur centre seul)
       rouler(VITESSE_AVANCE, VITESSE_AVANCE);
+      Serial.print("Ligne centrée");
       break;
 
     case 3:  // virage à droite léger (capteur centre et droit)
       dernierVirage = DROITE;
       rouler(0.24f, 0.17f);
+      Serial.print("Virage à droite léger");
       break
       ;
     case 4:   // virage à gauche fort (capteur gauche seul)
       dernierVirage = GAUCHE;
       rouler(VITESSE_INTERIEURE, VITESSE_EXTERIEURE);
+      Serial.print("Virage à gauche fort");
       break;
 
     case 5:     // traverser droit. (capteur gauche et droit)
       rouler(VITESSE_AVANCE, VITESSE_AVANCE);
+      Serial.print("Traverser droit");
       break;
 
     case 6:  // virage à gauche léger (capteur gauche et centre)
       dernierVirage = GAUCHE;
       rouler(0.17f, 0.24f);
+      Serial.print("Virage à gauche léger");
       break;
 
     case 7:  // avance (tous les capteurs actifs)
         rouler(VITESSE_AVANCE, VITESSE_AVANCE);
+        Serial.print("Avance (tous les capteurs actifs)");
       break;
   }
 }
