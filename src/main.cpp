@@ -34,10 +34,10 @@ void loop() {
   }
   derniere = couleur;
 
-  if (couleur == VERT || couleur == BLEU || couleur == ROUGE || couleur == JAUNE) {
-    MOTOR_SetSpeed(LEFT, 0.0f);
-    MOTOR_SetSpeed(RIGHT, 0.0f);
-    arrete = true;
-  }
+  // if (couleur == VERT || couleur == BLEU || couleur == ROUGE || couleur == JAUNE) {
+  //   MOTOR_SetSpeed(LEFT, 0.0f);
+  //   MOTOR_SetSpeed(RIGHT, 0.0f);
+  //   arrete = true;
+  // }
 
 }
