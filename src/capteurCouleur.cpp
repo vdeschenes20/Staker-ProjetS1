@@ -48,11 +48,10 @@ struct Seuil {
 
 
 static Seuil seuils[NB_COULEURS] = {      //NB_couleur est le nombre de couleurs à reconnaître
-    {ROSE,   312, 409, 288, 384, 181, 233},
-    {JAUNE,  340, 413, 422, 517, 228, 279},
-    {ORANGE, 369, 469,  29, 378, 265, 332},
-    {BLEU,   309, 364, 313, 369, 156, 184},
-    {VERT,   405, 481, 257, 298, 334, 391}
+    {ROUGE, 417.60, 513.70, 286.20, 354.20, 279.90, 346.50},
+{JAUNE, 593.10, 726.00, 651.60, 797.50, 392.40, 480.70},
+{BLEU, 166.50, 204.60, 274.50, 336.60, 326.70, 400.40},
+{VERT, 195.30, 239.80, 405.90, 496.10, 317.70, 389.40},
 };
 
 
@@ -81,30 +80,37 @@ CouleurId identifierCouleur(Couleur m) {
 //***fonction à appeler pour avoir la couleur identifiée par le capteur***
 // ---------------------------------------------------------------
 
-CouleurId decisionCouleur() {
-    CouleurId lectures[NB_LECTURES];
-
-    // identification de la couleur
-    for (int i = 0; i < NB_LECTURES; i++) {
-        lectures[i] = identifierCouleur(lireCapteur());
-        delay(25);
-    }
-
-    // regarde combien de lectures sont de la même couleur et prend la décision
+// Vote sur un tableau de lectures déjà prises
+static CouleurId voter(const CouleurId lectures[]) {
     for (int i = 0; i < NB_LECTURES; i++) {
         int votes = 0;
         for (int j = 0; j < NB_LECTURES; j++) {
             if (lectures[j] == lectures[i]) votes++;
         }
         if (votes >= SEUIL_VOTES && lectures[i] != AUCUN) {
-            return lectures[i];  
+            return lectures[i];
         }
     }
-
-    return AUCUN;  
+    return AUCUN;
 }
 
+// Prend UNE mesure par appel et la met dans un buffer circulaire
+// (la nouvelle remplace la plus ancienne).
+// Retourne la couleur qui a au moins SEUIL_VOTES votes sur les
+// NB_LECTURES dernières mesures, sinon AUCUN.
+CouleurId mesurerCouleur() {
+    static CouleurId lectures[NB_LECTURES];
+    static int index = 0;   // où écrire la prochaine mesure
+    static int nb = 0;      // combien de mesures valides au départ
 
+    lectures[index] = identifierCouleur(lireCapteur());
+    index = (index + 1) % NB_LECTURES;
+
+    if (nb < NB_LECTURES) nb++;
+    if (nb < NB_LECTURES) return AUCUN;   // buffer pas encore plein
+
+    return voter(lectures);
+}
 
 
 
@@ -164,7 +170,7 @@ void calibrerCouleur(const char* nom, int index, int duree_ms) {
 // ---------------------------------------------------------------
 void modeCalibration() {
  
-    const char* noms[NB_COULEURS] = {"Rose", "Jaune", "Orange", "Bleu", "Vert"};
+    const char* noms[NB_COULEURS] = {"ROUGE", "JAUNE", "BLEU", "VERT"};
 
     for (int i = 0; i < NB_COULEURS; i++) {
         Serial.print("Place le capteur sur : ");
@@ -196,11 +202,10 @@ void modeCalibration() {
 // ---------------------------------------------------------------
 String nomCouleur(CouleurId id) {
     switch (id) {
-        case ROSE:   return "Rose";
-        case JAUNE:  return "Jaune";
-        case ORANGE: return "Orange";
-        case BLEU:   return "Bleu";
-        case VERT:   return "Vert";
+        case ROUGE:   return "ROUGE";
+        case JAUNE:  return "JAUNE";
+        case BLEU:   return "BLEU";
+        case VERT:   return "VERT";
         default:     return "Aucune";
     }
 }
