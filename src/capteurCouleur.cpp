@@ -68,7 +68,10 @@ CouleurId identifierCouleur(Couleur m) {
         if (m.R >= seuils[i].minR && m.R <= seuils[i].maxR &&
             m.G >= seuils[i].minG && m.G <= seuils[i].maxG &&
             m.B >= seuils[i].minB && m.B <= seuils[i].maxB) {
+            Serial.print("Couleur reconnue : ");
+            Serial.println(nomCouleur(seuils[i].id));
             return seuils[i].id;
+            
         }
     }    // aucune couleur ne correspond aux seuils return AUCUN
     return AUCUN;
