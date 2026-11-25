@@ -87,7 +87,7 @@ CouleurId decisionCouleur() {
     // identification de la couleur
     for (int i = 0; i < NB_LECTURES; i++) {
         lectures[i] = identifierCouleur(lireCapteur());
-        delay(50);
+        delay(25);
     }
 
     // regarde combien de lectures sont de la même couleur et prend la décision
