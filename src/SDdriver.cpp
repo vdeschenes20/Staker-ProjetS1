@@ -7,175 +7,162 @@
 // Date: 24/09/2026
 //***************************************
 
-//*********INCLUDES********//
-#include <Arduino.h>
-#include "SdFat.h"
 #include "SDdriver.h"
+#include <limits.h>
 
-//********CONSTANTES*******//
-
-//********VARIABLES********//
+namespace {
 SdFat sd;
-File32 dataFile;
+const char* CSV = "/data.csv";
+const char* COPIE = "/data.tmp";
+const char* SAUVEGARDE = "/data.bak";
 
-//********FONCTIONS********//
-void intitialisationSD(void)
-{
-  while(!sd.begin(CS_PIN, SD_SCK_MHZ(4))) {
-    Serial.println("Échec de l'initialisation");
-  }
-  Serial.println("Initialisation réussie");
+// Lit une ligne bornée pour éviter de charger tout le CSV en RAM.
+Lecture lireLigne(File32& fichier, String& ligne) {
+    ligne = "";
+    int octet;
+    while ((octet = fichier.read()) >= 0) {
+        if (octet == '\n') return LIGNE;
+        if (octet == '\r') continue;
+        if (ligne.length() >= 255 || !ligne.concat(static_cast<char>(octet))) return ERREUR_CSV;
+    }
+    if (fichier.getError()) return ERREUR_CSV;
+    return ligne.length() ? LIGNE : FIN_CSV;
 }
 
-String trouverLigne(int colonneCible, const String &valeurRecherchee)
-{
-  File32 f;
-  if (!f.open("/data.csv", O_RDONLY)) {
-    Serial.println(F("Erreur : impossible d'ouvrir le fichier en lecture."));
-    while(!sd.begin(CS_PIN, SD_SCK_MHZ(4))) {
-    Serial.println("Échec de l'initialisation");
-    }
-    return "";
-  }
- 
-  char ligne[100];
-  char copie[100];
-  String resultat = "";
-  int numeroLigne = 0;
- 
-  while (f.available()) {
-    int n = f.fgets(ligne, sizeof(ligne));
-    numeroLigne++;
-    if (n <= 0) break;
- 
-    // Retire \r et \n à la fin
-    while (n > 0 && (ligne[n - 1] == '\n' || ligne[n - 1] == '\r')) {
-      ligne[--n] = '\0';
-    }
-    if (n == 0) continue;  // ligne vide
- 
-    // On découpe une copie pour garder la ligne intacte
-    strcpy(copie, ligne);
- 
-    int col = 0;
-    char *debut = copie;
-    while (true) {
-      char *fin = strchr(debut, ';');
-      if (fin) *fin = '\0';  // termine le champ courant
- 
-      if (col == colonneCible) {
-        if (strcmp(debut, valeurRecherchee.c_str()) == 0) {
-          resultat = ligne;  // ligne complète d'origine
+// Sépare les champs CSV. Deux guillemets dans un champ représentent un guillemet.
+bool parsePieceDetail(const String& ligne, Piece& piece) {
+    String* champs[] = {&piece.numero, &piece.type, &piece.position, &piece.etat, &piece.nom};
+    for (String* champ : champs) *champ = "";
+    uint8_t colonne = 0;
+    bool entreGuillemets = false;
+    bool guillemetsFermes = false;
+    for (unsigned int i = 0; i < ligne.length(); ++i) {
+        char c = ligne[i];
+        if (c == '|') return false;
+        if (entreGuillemets && c == '"') {
+            if (i + 1 < ligne.length() && ligne[i + 1] == '"') ++i;
+            else {
+                entreGuillemets = false;
+                guillemetsFermes = true;
+                continue;
+            }
+        } else if (!entreGuillemets && c == ';') {
+            if (++colonne >= 5) return false;
+            guillemetsFermes = false;
+            continue;
+        } else if (guillemetsFermes) {
+            return false;
+        } else if (!entreGuillemets && c == '"') {
+            if (champs[colonne]->length()) return false;
+            entreGuillemets = true;
+            continue;
         }
-        break;  // inutile d'aller plus loin sur cette ligne
-      }
- 
-      if (!fin) break;  // dernière colonne atteinte
-      debut = fin + 1;
-      col++;
+        if (!champs[colonne]->concat(c)) return false;
     }
- 
-    if (resultat.length() > 0) break;  // trouvé
-  }
- 
-  f.close();
-  if(resultat == "")
-  {
-    return "";
-  }
-  return String(numeroLigne) + ";" + resultat;
+    return !entreGuillemets && colonne >= 3 && piece.position.length() &&
+           (piece.etat == "-" || piece.etat == "0" || piece.etat == "1" || piece.etat == "2");
 }
 
-bool updateCSV(int ligneCible, int colonneCible, String nouvelleValeur)
-{
-  File32 fmodif;
-  if (!fmodif.open("/data.csv", O_RDWR)) {
-    Serial.println(F("Erreur : impossible d'ouvrir data.csv en lecture/écriture."));
-    // fmodif.close();
-    while(!sd.begin(CS_PIN, SD_SCK_MHZ(4))) {
-    Serial.println("Échec de l'initialisation");
+// Protège les guillemets et points-virgules lors de la réécriture.
+void ecrireChamp(File32& copie, const String& champ) {
+    if (champ.indexOf('"') < 0 && champ.indexOf(';') < 0) {
+        copie.print(champ);
+        return;
     }
+    copie.print('"');
+    for (unsigned int i = 0; i < champ.length(); ++i) {
+        if (champ[i] == '"') copie.print('"');
+        copie.print(champ[i]);
+    }
+    copie.print('"');
+}
+}
+
+// Récupère l'ancien CSV si le robot a redémarré entre les deux renommages.
+bool initialiserSD() {
+    if (!sd.begin(CS_PIN, SD_SCK_MHZ(4))) return false;
+    if (!sd.exists(CSV) && sd.exists(SAUVEGARDE) && !sd.rename(SAUVEGARDE, CSV)) return false;
+    return sd.exists(CSV);
+}
+
+// Ouvre le CSV et saute la première ligne, même avec un BOM UTF-8.
+bool ouvrirCSV(File32& fichier) {
+    String entete;
+    if (!fichier.open(CSV, O_RDONLY)) return false;
+    if (lireLigne(fichier, entete) == LIGNE &&
+        (entete.startsWith("No;Type;") || entete.startsWith("\xEF\xBB\xBF" "No;Type;"))) return true;
+    fichier.close();
     return false;
-  }
- 
-  char ligne[100];
-  int numeroLigne = 0;
- 
-  while (fmodif.available()) {
-    uint32_t debutLigne = fmodif.curPosition();  // position de cette ligne dans le fichier
-    int n = fmodif.fgets(ligne, sizeof(ligne));
-    if (n <= 0) break;
- 
-    // Retire \r et \n à la fin (n'affecte pas les positions calculées plus bas)
-    while (n > 0 && (ligne[n - 1] == '\n' || ligne[n - 1] == '\r')) {
-      ligne[--n] = '\0';
-    }
- 
-    if (numeroLigne == ligneCible) {
-      int col = 0;
-      char *debut = ligne;
-      while (true) {
-        char *fin = strchr(debut, ';');
- 
-        if (col == colonneCible) {
-          // Position exacte de la cellule dans le fichier
-          // (la longueur de la nouvelle valeur doit être vérifiée par l'appelant)
-          fmodif.seekSet(debutLigne + (uint32_t)(debut - ligne));
-          fmodif.write(nouvelleValeur.c_str(), nouvelleValeur.length());
-          fmodif.flush();
-          fmodif.close();  // close() vide aussi le tampon vers la carte
-          return true;
-        }
- 
-        if (!fin) break;  // dernière colonne atteinte sans trouver la cible
-        debut = fin + 1;
-        col++;
-      }
-      fmodif.flush();
-      fmodif.close();
-      Serial.println(F("Colonne introuvable sur cette ligne."));
-      return false;
-    }
-    numeroLigne++;
-  }
- 
-  fmodif.flush();
-  fmodif.close();
-  Serial.println(F("Ligne introuvable."));
-  return false;
 }
 
-int trouverNo(void)
-{
-  File32 f;
-  if (!f.open("/data.csv", O_RDONLY)) {
-    Serial.println(F("Erreur : impossible d'ouvrir le fichier en lecture."));
-    return -1;
-  }
- 
-  char ligne[100];
-  int maximum = -1;
-  bool trouve = false;
- 
-  while (f.available()) {
-    int n = f.fgets(ligne, sizeof(ligne));
-    if (n <= 0) break;
- 
-    // Isole la première colonne (jusqu'au premier ';')
-    char *fin = strchr(ligne, ';');
-    if (fin) *fin = '\0';
- 
-    // Conversion: on ignore si ce n'est pas un nombre (en-tête, ligne vide...)
-    char *finNombre;
-    int valeur = strtol(ligne, &finNombre, 10);
-    if (finNombre == ligne) continue;
- 
-    if (!trouve || valeur > maximum) {
-      maximum = valeur;
-      trouve = true;
+// Lit une pièce. Saute les lignes vides.
+Lecture lirePiece(File32& fichier, Piece& piece) {
+    String ligne;
+    Lecture resultat;
+    do {
+        resultat = lireLigne(fichier, ligne);
+    } while (resultat == LIGNE && !ligne.length());
+    if (resultat != LIGNE) return resultat;
+    return parsePieceDetail(ligne, piece) ? LIGNE : ERREUR_CSV;
+}
+
+// Prépare une copie indépendante. Le CSV original reste intact pendant l'écriture.
+bool ouvrirCopieCSV(File32& copie) {
+    if (!copie.open(COPIE, O_WRONLY | O_CREAT | O_TRUNC)) return false;
+    copie.println(F("No;Type;Position;Etat;Nom"));
+    return !copie.getWriteError();
+}
+
+// Écrit une ligne complète, quelle que soit la longueur des champs.
+bool ecrirePiece(File32& copie, const Piece& piece) {
+    const String* champs[] = {&piece.numero, &piece.type, &piece.position, &piece.etat, &piece.nom};
+    for (uint8_t i = 0; i < 5; ++i) {
+        if (i) copie.print(';');
+        ecrireChamp(copie, *champs[i]);
     }
-  }
- 
-  f.close();
-  return trouve ? maximum : -1;
+    copie.println();
+    return !copie.getWriteError();
+}
+
+// Remplace le fichier seulement si la copie a été écrite jusqu'au bout.
+bool terminerCopieCSV(File32& copie, bool conserver) {
+    bool complete = conserver && !copie.getWriteError() && copie.sync();
+    complete = copie.close() && complete;
+    if (!complete) {
+        sd.remove(COPIE);
+        return false;
+    }
+    if (sd.exists(SAUVEGARDE) && !sd.remove(SAUVEGARDE)) return false;
+    if (!sd.rename(CSV, SAUVEGARDE)) return false;
+    if (!sd.rename(COPIE, CSV)) {
+        sd.rename(SAUVEGARDE, CSV);
+        return false;
+    }
+    return true;
+}
+
+// Renvoie le plus grand numéro représentable par un int, ou -1 si absent.
+// Les numéros du CSV restent du texte. Les cases sans numéro sont ignorées.
+int trouverNo() {
+    if (!initialiserSD()) return -1;
+    File32 fichier;
+    if (!ouvrirCSV(fichier)) return -1;
+    int maximum = -1;
+    Piece piece;
+    Lecture lecture;
+    while ((lecture = lirePiece(fichier, piece)) == LIGNE) {
+        int valeur = 0;
+        bool valide = piece.numero.length() != 0;
+        for (unsigned int i = 0; i < piece.numero.length(); ++i) {
+            char c = piece.numero[i];
+            if (c < '0' || c > '9' || valeur > (INT_MAX - (c - '0')) / 10) {
+                valide = false;
+                break;
+            }
+            valeur = valeur * 10 + (c - '0');
+        }
+        if (valide && valeur > maximum) maximum = valeur;
+    }
+    fichier.close();
+    return lecture == FIN_CSV ? maximum : -1;
 }

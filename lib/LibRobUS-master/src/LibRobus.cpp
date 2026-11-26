@@ -229,7 +229,8 @@ void BLUETOOTH_setCallback(void (*f)()){
 };
 
 void serialEvent2(){
-  BT_func();
+  // Le lecteur Bluetooth du projet utilise Serial2 sans ce rappel.
+  if (BT_func != NULL) BT_func();
 };
 
 void BLUETOOTH_readCallback(){

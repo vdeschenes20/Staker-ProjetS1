@@ -1,0 +1,45 @@
+INVENTAIRE SUR LE ROBOT / STAKER-PROJETS1
+
+Le fichier principal du Mega est src/main.cpp. Pour intégrer l'inventaire
+dans le code du robot, appeler initialiserBluetooth() dans setup() et
+lireBluetooth() dans loop(). Les fichiers .cpp sont dans src et les .h dans include.
+
+Choisir megaatmega2560 dans PlatformIO pour le Mega.
+
+Le HC-05 passe les messages entre la manette et Serial2 à 9600 bauds.
+Mega D16 (TX2) vers RXD du module avec adaptation de niveau.
+Mega D17 (RX2) depuis TXD du module. Masse commune.
+Placer le fichier data.csv à la racine de la carte SD du robot.
+Le module SD utilise le bus SPI du Mega et D48 comme sélection (CS).
+Bluetooth.cpp initialise et lit Serial2. Si tu ajoutes BoardInit() pour
+le mouvement, évite BluetoothInit() et BLUETOOTH_read() de LibRobus sur
+ce port. Ils modifieraient le débit ou liraient les octets de la manette.
+
+src/Bluetooth.cpp reçoit les lignes et renvoie les réponses.
+src/Commande.cpp découpe les messages du PC.
+src/DataBase.cpp choisit, filtre et valide les emplacements.
+src/ActionsRobot.cpp contient les fonctions à remplir
+pour le déplacement, la pince et l'arrêt des moteurs.
+src/SDdriver.cpp lit et écrit le CSV sur la carte SD.
+Les adaptations de la manette utilisent ces mêmes fichiers d'inventaire.
+
+En Bluetooth, la carte SD du robot contient l'inventaire de référence.
+Chercher ne change pas le CSV. Stocker, récupérer, ajouter et retirer un
+emplacement modifient le CSV sur la carte SD. Le robot garde la version
+précédente dans data.bak. Les commandes actuelles gèrent l'inventaire.
+RECUPERER par type choisit la première pièce disponible dans l'ordre du CSV.
+RECUPERER par numéro vise uniquement ce numéro et refuse les doublons.
+Raccorder les mouvements et la pince avant de piloter le robot.
+
+Sans carte SD, la liaison répond, puis l'application signale que
+l'inventaire est indisponible. La simulation PC et le programme Robus
+bluetooth_test restent des outils distincts du programme sur carte SD.
+
+Repères pour fusionner les branches de l'équipe
+Les anciens fichiers et leurs variables sont conservés au commit 1b17dcb.
+main.cpp garde nb, nb2 et les entrées D2/D3 pour de futurs essais.
+Commande.h expose commande, la dernière commande reçue de la manette.
+Lors d'une fusion, réunir les appels dans un seul setup() et un seul loop().
+Les branches de la pince, du sonar et du suivi de ligne ont leur main.cpp.
+Vérifier aussi le port HC-05 et le CS de la SD avant de fusionner :
+ce programme utilise Serial2 à 9600 et D48 pour le CS.

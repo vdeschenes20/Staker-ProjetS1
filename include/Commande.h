@@ -1,5 +1,3 @@
-#ifndef COMMANDE_H
-#define COMMANDE_H
 //**************************************
 // Projet: Labyrinthe-S1
 // Fichiers: Commande.h
@@ -9,44 +7,18 @@
 // Date: 24/09/2026
 //***************************************
 
-//*********DEFINES********//
-#define hc05 Serial2
-//*****VARIABLES GLOBALES*****//
+#pragma once
+#include <Arduino.h>
 
-struct Commande
-{
-    int id;
-    int type;
-    int parametre1;
-    int parametre2;
-    int position[3];
-};
-enum TypeCommande {
-  CMD_INCONNUE = 0,
-  CMD_SYNC,
-  CMD_STOCKER,
-  CMD_CHERCHER,
-  CMD_RECUPERER,
-  CMD_AJOUTER_EMPLACEMENT,
-  CMD_RETIRER_EMPLACEMENT,
-  CMD_RESET_INVENTAIRE,
-  CMD_EMERGENCY_STOP,
-  CMD_RESET_ESTOP
+// Ligne reçue du PC. Les arguments restent du texte pour garder les zéros.
+struct Commande {
+    String id;
+    String action;
+    String args[4];
+    uint8_t nombreArgs = 0;
 };
 
-enum CritereRecherche {
-  CRITERE_AUCUN = 0,
-  CRITERE_NUMERO,
-  CRITERE_TYPE,
-  CRITERE_POSITION
-};
-
-static const size_t TAILLE_TAMPON = 160;
-
+// Dernière commande décodée, conservée comme dans le programme d'origine.
 extern Commande commande;
 
-//********FONCTIONS********//
-void initialisationCommande(void);
-bool lireCommandeHC05(Commande &cmdOut);
-void executerCommande(const Commande &cmd);
-#endif
+bool decoderCommande(const String& ligne, Commande& commande);
