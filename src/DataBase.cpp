@@ -29,35 +29,30 @@ void gestionDonnees(Commande c)
 {
     switch (c.type)
     {
-        case CHERCHER:
+        case CMD_CHERCHER:
             recherche(c.parametre1, c.parametre2, c.position);
             break;
-        case TRAITER:
-
-            break;
-        case STOCKER:
+        case CMD_STOCKER:
             stockage(c.parametre1, c.parametre2, c.position);
             break;
         default:
             break;
     }
-
-    
 }
 
 void recherche(int parametre, int info, int *position)
 {
     switch (parametre)
     {
-        case TYPE:
+        case CRITERE_TYPE:
             pieceExistante.type = info;
             break;
-        case POSITION:
+        case CRITERE_POSITION:
             for (int i = 0; i < POS_SIZE; i++) {
                 pieceExistante.position[i] = position[i];
             }
             break;
-        case NUMERO:
+        case CRITERE_NUMERO:
             pieceExistante.numero = info;
             break;
             
@@ -120,21 +115,26 @@ bool scanPiece(int parametre, Piece *p1)
 
     switch (parametre)
     {
-        case TYPE:
+        case CRITERE_TYPE:
             colonneCible = 1;
-            valeurRecherchee = String((char)(p1->type + 64));  
+            Serial.println(p1->type);
+            valeurRecherchee = String((char)p1->type);
+            // valeurRecherchee = String((char)(p1->type + 64));  
             break;
-        case POSITION:
+        case CRITERE_POSITION:
             colonneCible = 2;
             valeurRecherchee = String(p1->position[0]) + "," + String(p1->position[1]) + "," + String(p1->position[2]);
             if(verificationPositionDisponible(p1->position)) return false;
             break;
-        case NUMERO:
+        case CRITERE_NUMERO:
             colonneCible = 0;
             valeurRecherchee = "0" + String(p1->numero);
             if(p1->numero < 10) valeurRecherchee = "0" + valeurRecherchee;
             break;
     }
+    Serial.print(colonneCible);
+    Serial.print(" ");
+    Serial.print(valeurRecherchee);
     PieceDetail = trouverLigne(colonneCible, valeurRecherchee);
     Serial.println(PieceDetail);
     if(PieceDetail == "")
@@ -224,7 +224,7 @@ void dataBaseUpdate(int type, Piece p)
 }
 int scanStockage(Piece *p1)
 {
-    String spaceDetail = trouverLigne(3, "1"); //trouve un etat d'attente
+    String spaceDetail = trouverLigne(3, "0"); //trouve un etat d'attente
     if(spaceDetail != "")
     {
         Serial.println("Piece en attente");

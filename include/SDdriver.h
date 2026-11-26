@@ -10,7 +10,7 @@
 //***************************************
 #include <Arduino.h>
 //*********DEFINES********//
-#define CS_PIN 10
+#define CS_PIN 48
 //*****VARIABLES GLOBALES*****//
 
 
