@@ -21,6 +21,7 @@ class SRF04Sonar
     @param trigPin
     Digital pin number to enable triggering
     */
+
     void init(uint8_t echoPin, uint8_t trigPin);
 
     /** Method to pulse sonar and compute the range according to delay
