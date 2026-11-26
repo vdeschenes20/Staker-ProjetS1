@@ -2,6 +2,7 @@
 #include "Bluetooth.h"
 #include "Commande.h"
 #include "DataBase.h"
+#include "ActionsRobot.h"
 
 namespace {
 constexpr unsigned long DEBIT = 9600;
@@ -71,6 +72,7 @@ void traiterLigne(const String& ligne) {
     } else if ((action == "EMERGENCY_STOP" || action == "RESET_ESTOP") && commande.nombreArgs == 0) {
         // Ce verrou empêche les écritures. Relier l'arrêt matériel dans le futur pilote.
         arretLogiciel = action == "EMERGENCY_STOP";
+        if (arretLogiciel) arreterMouvement();
         accuser(commande.id);
         Serial1.println(arretLogiciel ? F("ETAT|ARRET") : F("ETAT|PRET"));
     } else if (action == "CHERCHER") {

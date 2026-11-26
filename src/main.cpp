@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "inventaire_bluetooth/Bluetooth.h"
+#include "Bluetooth.h"
 
 const uint8_t BOUTON_CHERCHER = 2;
 const uint8_t BOUTON_STOCKER = 3;

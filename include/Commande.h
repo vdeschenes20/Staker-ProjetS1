@@ -1,5 +1,3 @@
-#ifndef COMMANDE_H
-#define COMMANDE_H
 //**************************************
 // Projet: Labyrinthe-S1
 // Fichiers: Commande.h
@@ -9,20 +7,15 @@
 // Date: 24/09/2026
 //***************************************
 
-//*********DEFINES********//
+#pragma once
+#include <Arduino.h>
 
-//*****VARIABLES GLOBALES*****//
-
-struct Commande
-{
-    int type;
-    int parametre1;
-    int parametre2;
-    int position[3];
+// Ligne reçue du PC. Les arguments restent du texte pour garder les zéros.
+struct Commande {
+    String id;
+    String action;
+    String args[4];
+    uint8_t nombreArgs = 0;
 };
 
-extern Commande commande;
-//********FONCTIONS********//
-void initialisationCommande(void);
-
-#endif
+bool decoderCommande(const String& ligne, Commande& commande);

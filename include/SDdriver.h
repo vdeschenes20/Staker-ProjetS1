@@ -1,5 +1,3 @@
-#ifndef SDDRIVER_H
-#define SDDRIVER_H
 //**************************************
 // Projet: Labyrinthe-S1
 // Fichiers: SDdriver.h
@@ -8,20 +6,19 @@
 // Description: Breve description du script
 // Date: 24/09/2026
 //***************************************
-#include <Arduino.h>
-//*********DEFINES********//
-#define CS_PIN 10
-//*****VARIABLES GLOBALES*****//
 
+#pragma once
+#include <SdFat.h>
+#include "DataBase.h"
 
-//********FONCTIONS********//
-void intitialisationSD(void);
-String trouverLigne(int colonneCible, const String &valeurRecherchee);
-void ecrireLigne(int numeroLigne, String nouvelleLigne);
-void supprimerLigne(int numeroLigne);
-void renommeFichier(void);
-bool updateCSV(int numeroLigneCible, int colonneCible, String nouvelleValeur);
-int trouverNo(void);
-void fermerFichier(void);
+constexpr uint8_t CS_PIN = 10;
 
-#endif
+// Résultat distinct pour fin de fichier et ligne invalide.
+enum Lecture { LIGNE, FIN_CSV, ERREUR_CSV };
+
+bool initialiserSD();
+bool ouvrirCSV(File32& fichier);
+Lecture lirePiece(File32& fichier, Piece& piece);
+bool ouvrirCopieCSV(File32& copie);
+bool ecrirePiece(File32& copie, const Piece& piece);
+bool terminerCopieCSV(File32& copie, bool conserver);

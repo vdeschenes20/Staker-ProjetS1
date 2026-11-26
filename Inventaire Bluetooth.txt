@@ -2,7 +2,7 @@ INVENTAIRE SUR LE ROBOT / STAKER-PROJETS1
 
 Le fichier principal du Mega est src/main.cpp. Pour intégrer l'inventaire
 dans le code du robot, appeler initialiserBluetooth() dans setup() et
-lireBluetooth() dans loop(). Garder aussi le dossier src/inventaire_bluetooth.
+lireBluetooth() dans loop(). Les fichiers .cpp sont dans src et les .h dans include.
 
 Choisir mega_inventaire dans PlatformIO pour le Mega. Les boutons et la
 manette appellent les mêmes fonctions. Un bouton relie D2 ou D3 à GND.
@@ -13,15 +13,19 @@ Le HC-05 passe les messages entre la manette et Serial1 à 9600 bauds.
 Placer le fichier data.csv à la racine de la carte SD du robot.
 Le module SD utilise le bus SPI du Mega et D10 comme sélection (CS).
 
-src/inventaire_bluetooth/Bluetooth.cpp reçoit les lignes et renvoie les réponses.
-src/inventaire_bluetooth/Commande.cpp découpe les messages du PC.
-src/inventaire_bluetooth/DataBase.cpp choisit, filtre et valide les emplacements.
-src/inventaire_bluetooth/SDdriver.cpp lit et écrit le CSV sur la carte SD.
+src/Bluetooth.cpp reçoit les lignes et renvoie les réponses.
+src/Commande.cpp découpe les messages du PC.
+src/DataBase.cpp choisit, filtre et valide les emplacements.
+src/ActionsRobot.cpp contient les fonctions à remplir
+pour le déplacement, la pince et l'arrêt des moteurs.
+src/SDdriver.cpp lit et écrit le CSV sur la carte SD.
 
 En Bluetooth, la carte SD du robot contient l'inventaire de référence.
 Chercher ne change pas le CSV. Stocker, récupérer, ajouter et retirer un
 emplacement modifient le CSV sur la carte SD. Le robot garde la version
 précédente dans data.bak. Les commandes actuelles gèrent l'inventaire.
+RECUPERER par type choisit la première pièce disponible dans l'ordre du CSV.
+RECUPERER par numéro vise uniquement ce numéro et refuse les doublons.
 Raccorder les mouvements et la pince avant de piloter le robot.
 
 Sans carte SD, la liaison répond, puis l'application signale que
