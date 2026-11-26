@@ -21,6 +21,91 @@ const float VITESSE_EXTERIEURE = 0.12f;
 enum Direction { TOUT_DROIT, GAUCHE, DROITE };
 Direction dernierVirage = TOUT_DROIT;
 
+struct AccumulateurCapteur {
+  unsigned long somme;
+  int minimum;
+  int maximum;
+};
+
+struct StatistiquesCapteur {
+  float moyenne;
+  int minimum;
+  int maximum;
+};
+
+struct StatistiquesCalibration {
+  StatistiquesCapteur gauche;
+  StatistiquesCapteur centre;
+  StatistiquesCapteur droite;
+};
+
+void ajouterMesure(AccumulateurCapteur &accumulateur, int valeur) {
+  accumulateur.somme += valeur;
+  if (valeur < accumulateur.minimum) accumulateur.minimum = valeur;
+  if (valeur > accumulateur.maximum) accumulateur.maximum = valeur;
+};
+
+void attendreEntreeSerie(const __FlashStringHelper *message) {
+  while (Serial.available() > 0) Serial.read();
+  Serial.println(message);
+  while (Serial.available() == 0) delay(10);
+  while (Serial.available() > 0) Serial.read();
+}
+
+StatistiquesCalibration mesurerStatistiquesCapteurs() {
+  AccumulateurCapteur gauche = {0, 1023, 0};
+  AccumulateurCapteur centre = {0, 1023, 0};
+  AccumulateurCapteur droite = {0, 1023, 0};
+  unsigned int nombreMesures = 0;
+  const unsigned long debut = millis();
+
+  while (millis() - debut < 5000UL) {
+    const MesuresCapteursSuiveurLigne mesures = lireCapteursSuiveurLigne();
+    ajouterMesure(gauche, mesures.gauche);
+    ajouterMesure(centre, mesures.centre);
+    ajouterMesure(droite, mesures.droite);
+    ++nombreMesures;
+    delay(10);
+  }
+
+  return {
+    {
+      static_cast<float>(gauche.somme) / nombreMesures,
+      gauche.minimum,
+      gauche.maximum
+    },
+    {
+      static_cast<float>(centre.somme) / nombreMesures,
+      centre.minimum,
+      centre.maximum
+    },
+    {
+      static_cast<float>(droite.somme) / nombreMesures,
+      droite.minimum,
+      droite.maximum
+    }
+  };
+}
+
+void afficherStatistiquesCapteur(
+    const __FlashStringHelper *nom,
+    const StatistiquesCapteur &blanc,
+    const StatistiquesCapteur &noir) {
+  Serial.print(nom);
+  Serial.print(F(" | blanc moy: "));
+  Serial.print(blanc.moyenne, 1);
+  Serial.print(F(" min: "));
+  Serial.print(blanc.minimum);
+  Serial.print(F(" max: "));
+  Serial.print(blanc.maximum);
+  Serial.print(F(" | noir moy: "));
+  Serial.print(noir.moyenne, 1);
+  Serial.print(F(" min: "));
+  Serial.print(noir.minimum);
+  Serial.print(F(" max: "));
+  Serial.println(noir.maximum);
+}
+
 void rouler(float vitesseGauche, float vitesseDroite) {
   MOTOR_SetSpeed(LEFT, vitesseGauche);
   MOTOR_SetSpeed(RIGHT, vitesseDroite);
@@ -38,10 +123,35 @@ void initialiserSuiveurLigne() {
   pinMode(CAPTEUR_DROITE, INPUT);
 }
 
+MesuresCapteursSuiveurLigne lireCapteursSuiveurLigne() {
+  return {
+    analogRead(CAPTEUR_GAUCHE),
+    analogRead(CAPTEUR_CENTRE),
+    analogRead(CAPTEUR_DROITE)
+  };
+}
+
+void CalibrationSuiveurLigne() {
+  attendreEntreeSerie(F("Placez les capteurs sur le BLANC, puis appuyez sur Entree."));
+  Serial.println(F("Mesure du blanc pendant 5 secondes..."));
+  const StatistiquesCalibration blanc = mesurerStatistiquesCapteurs();
+
+  attendreEntreeSerie(F("Placez les capteurs sur le NOIR, puis appuyez sur Entree."));
+  Serial.println(F("Mesure du noir pendant 5 secondes..."));
+  const StatistiquesCalibration noir = mesurerStatistiquesCapteurs();
+
+  Serial.println();
+  Serial.println(F("Calibration: moyenne, minimum et maximum"));
+  afficherStatistiquesCapteur(F("Gauche"), blanc.gauche, noir.gauche);
+  afficherStatistiquesCapteur(F("Centre"), blanc.centre, noir.centre);
+  afficherStatistiquesCapteur(F("Droite"), blanc.droite, noir.droite);
+}
+
 int detecterPositionRobot() {
-  const bool gauche = analogRead(CAPTEUR_GAUCHE) >= SEUIL_GAUCHE;
-  const bool centre = analogRead(CAPTEUR_CENTRE) >= SEUIL_CENTRE;
-  const bool droite = analogRead(CAPTEUR_DROITE) >= SEUIL_DROITE;
+  const MesuresCapteursSuiveurLigne mesures = lireCapteursSuiveurLigne();
+  const bool gauche = mesures.gauche >= SEUIL_GAUCHE;
+  const bool centre = mesures.centre >= SEUIL_CENTRE;
+  const bool droite = mesures.droite >= SEUIL_DROITE;
   return (gauche << 2) | (centre << 1) | droite;
 }
 

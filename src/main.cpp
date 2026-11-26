@@ -16,6 +16,7 @@ void setup() {
 
   initialiserSuiveurLigne();
   reinitialiserSuiveurLigne();
+ // CalibrationSuiveurLigne();
 }
 
 void loop() {
