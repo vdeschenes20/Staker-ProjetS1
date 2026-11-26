@@ -1,7 +1,13 @@
 INVENTAIRE SUR LE ROBOT / STAKER-PROJETS1
 
-Choisir mega_inventaire dans PlatformIO pour le Mega. L'environnement
-nanoatmega328new conserve le programme original avec ses boutons.
+Le fichier principal du Mega est src/main.cpp. Pour intégrer l'inventaire
+dans le code du robot, appeler initialiserBluetooth() dans setup() et
+lireBluetooth() dans loop(). Garder aussi le dossier src/inventaire_bluetooth.
+
+Choisir mega_inventaire dans PlatformIO pour le Mega. Les boutons et la
+manette appellent les mêmes fonctions. Un bouton relie D2 ou D3 à GND.
+D2 cherche le type A sans changer le CSV. D3 tente de ranger une pièce
+de type A à la position 4,1,1, si cette case est libre.
 
 Le HC-05 passe les messages entre la manette et Serial1 à 9600 bauds.
 Placer le fichier data.csv à la racine de la carte SD du robot.

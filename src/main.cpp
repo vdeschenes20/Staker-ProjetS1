@@ -1,73 +1,58 @@
 #include <Arduino.h>
-
-#ifdef INVENTAIRE_BLUETOOTH
 #include "inventaire_bluetooth/Bluetooth.h"
 
-// Mega : le robot reçoit les demandes et gère son CSV sur la carte SD.
+const uint8_t BOUTON_CHERCHER = 2;
+const uint8_t BOUTON_STOCKER = 3;
+const unsigned long DELAI_ANTI_REBOND_MS = 150;
+
+struct Bouton {
+  uint8_t broche;
+  int etatLu;
+  int etatStable;
+  unsigned long dernierChangement;
+};
+
+Bouton chercher = {BOUTON_CHERCHER, HIGH, HIGH, 0};
+Bouton stocker = {BOUTON_STOCKER, HIGH, HIGH, 0};
+
+// Les boutons relient leur broche à GND pendant l'appui.
+void initialiserBouton(Bouton& bouton) {
+  pinMode(bouton.broche, INPUT_PULLUP);
+  bouton.etatLu = digitalRead(bouton.broche);
+  bouton.etatStable = bouton.etatLu;
+  bouton.dernierChangement = millis();
+}
+
+// Détecte un seul appui sans ralentir la lecture Bluetooth.
+bool nouvelAppui(Bouton& bouton) {
+  int lecture = digitalRead(bouton.broche);
+  unsigned long maintenant = millis();
+  if (lecture != bouton.etatLu) {
+    bouton.etatLu = lecture;
+    bouton.dernierChangement = maintenant;
+  }
+  if (lecture == bouton.etatStable ||
+      maintenant - bouton.dernierChangement < DELAI_ANTI_REBOND_MS) {
+    return false;
+  }
+  bouton.etatStable = lecture;
+  return lecture == LOW;
+}
+
+// Prépare la liaison et les deux entrées locales.
 void setup() {
   initialiserBluetooth();
+  initialiserBouton(chercher);
+  initialiserBouton(stocker);
 }
 
-// Traite les commandes de la manette dès qu'une ligne complète arrive.
+// La manette et les boutons passent par les mêmes fonctions d'inventaire.
 void loop() {
   lireBluetooth();
-}
-
-#else
-
-#include "DataBase.h"
-#include "Commande.h"
-#include "SDdriver.h"
-
-// put function declarations here:
-Commande commande;
-int nb = 0;
-int nb2 = 25;
-void setup() {
-  initialisationCommande();
-  initialsationDonnees();
-  pinMode(2, INPUT);
-  pinMode(3, INPUT);
-}
-
-void loop() {
-  static int lastButton1State = HIGH;
-  static int lastButton2State = HIGH;
-  int buttonState = digitalRead(2);
-  int buttonState2 = digitalRead(3);
-  if (buttonState == LOW && lastButton1State == HIGH) {
-    delay(150);
-    if (digitalRead(2) != LOW) {
-      lastButton1State = digitalRead(2);
-      return;
-    }
-
-    nb++;
-    commande.type = CHERCHER;
-    commande.parametre1 = TYPE;
-    commande.parametre2 = 1;
-    commande.position[0] = 0;
-    commande.position[1] = 0;
-    commande.position[2] = 0;
-    gestionDonnees(commande);
+  if (nouvelAppui(chercher)) {
+    commandeLocale("CMD|LOCAL|CHERCHER|TYPE_TEXTE|A");
   }
-  if(buttonState2 == LOW && lastButton2State == HIGH) {
-    delay(150);
-    if (digitalRead(3) != LOW) {
-      lastButton2State = digitalRead(3);
-      return;
-    }
-    nb2++;
-    commande.type = STOCKER;
-    commande.parametre1 = 0;
-    commande.parametre2 = 1;
-    commande.position[0] = 4;
-    commande.position[1] = 1;
-    commande.position[2] = 1;
-    gestionDonnees(commande);
+  if (nouvelAppui(stocker)) {
+    commandeLocale("CMD|LOCAL|STOCKER|-|A|4,1,1|Piece A");
   }
-  lastButton1State = digitalRead(2);
-  lastButton2State = digitalRead(3);
 }
-
-#endif

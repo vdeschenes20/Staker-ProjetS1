@@ -97,6 +97,11 @@ void initialiserBluetooth() {
     reception.reserve(MAX_LIGNE);
 }
 
+// Un bouton local passe par les mêmes validations qu'une ligne du PC.
+void commandeLocale(const char* ligne) {
+    traiterLigne(ligne);
+}
+
 // Lit les octets disponibles. Attend la fin de ligne avant de lancer une action.
 void lireBluetooth() {
     while (Serial1.available()) {
