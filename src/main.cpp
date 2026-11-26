@@ -1,4 +1,20 @@
 #include <Arduino.h>
+
+#ifdef INVENTAIRE_BLUETOOTH
+#include "inventaire_bluetooth/Bluetooth.h"
+
+// Mega : le robot reçoit les demandes et gère son CSV sur la carte SD.
+void setup() {
+  initialiserBluetooth();
+}
+
+// Traite les commandes de la manette dès qu'une ligne complète arrive.
+void loop() {
+  lireBluetooth();
+}
+
+#else
+
 #include "DataBase.h"
 #include "Commande.h"
 #include "SDdriver.h"
@@ -53,3 +69,5 @@ void loop() {
   lastButton1State = digitalRead(2);
   lastButton2State = digitalRead(3);
 }
+
+#endif

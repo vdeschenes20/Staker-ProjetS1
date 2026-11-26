@@ -1,0 +1,23 @@
+INVENTAIRE SUR LE ROBOT / STAKER-PROJETS1
+
+Choisir mega_inventaire dans PlatformIO pour le Mega. L'environnement
+nanoatmega328new conserve le programme original avec ses boutons.
+
+Le HC-05 passe les messages entre la manette et Serial1 à 9600 bauds.
+Placer le fichier data.csv à la racine de la carte SD du robot.
+Le module SD utilise le bus SPI du Mega et D10 comme sélection (CS).
+
+src/inventaire_bluetooth/Bluetooth.cpp reçoit les lignes et renvoie les réponses.
+src/inventaire_bluetooth/Commande.cpp découpe les messages du PC.
+src/inventaire_bluetooth/DataBase.cpp choisit, filtre et valide les emplacements.
+src/inventaire_bluetooth/SDdriver.cpp lit et écrit le CSV sur la carte SD.
+
+En Bluetooth, la carte SD du robot contient l'inventaire de référence.
+Chercher ne change pas le CSV. Stocker, récupérer, ajouter et retirer un
+emplacement modifient le CSV sur la carte SD. Le robot garde la version
+précédente dans data.bak. Les commandes actuelles gèrent l'inventaire.
+Raccorder les mouvements et la pince avant de piloter le robot.
+
+Sans carte SD, la liaison répond, puis l'application signale que
+l'inventaire est indisponible. La simulation PC et le programme Robus
+bluetooth_test restent des outils distincts du programme sur carte SD.
